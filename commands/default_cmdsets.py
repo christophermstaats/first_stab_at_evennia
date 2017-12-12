@@ -15,6 +15,11 @@ own cmdsets by inheriting from them or directly from `evennia.CmdSet`.
 """
 
 from evennia import default_cmds
+from commands.command import CmdAttributes
+from commands.command import CmdSkills
+from commands.command import CmdEcho
+from evennia import CmdSet
+from commands import command
 
 
 class CharacterCmdSet(default_cmds.CharacterCmdSet):
@@ -33,6 +38,12 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         #
         # any commands you add below will overload the default ones.
         #
+        self.add(CmdAttributes())
+        self.add(CmdSkills())
+        self.add(CmdEcho())
+        self.add(command.CmdAttack())
+        self.add(command.CmdCreateNPC())
+        self.add(command.CmdEditNPC())
 
 
 class AccountCmdSet(default_cmds.AccountCmdSet):
@@ -90,3 +101,13 @@ class SessionCmdSet(default_cmds.SessionCmdSet):
         #
         # any commands you add below will overload the default ones.
         #
+
+
+class ChargenCmdset(CmdSet):
+	"""
+	This cmdset is used in character generation areas.
+	"""
+	key = "Chargen"
+	def at_cmdset_creation(self):
+		"This is called and initialization"
+		self.add(command.CmdSetPower())

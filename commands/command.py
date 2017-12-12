@@ -7,6 +7,8 @@ Commands describe the input the account can do to the game.
 
 from evennia import Command as BaseCommand
 # from evennia import default_cmds
+import random
+from evennia import create_object
 
 
 class Command(BaseCommand):
@@ -29,7 +31,300 @@ class Command(BaseCommand):
             every command, like prompts.
 
     """
-    pass
+class CmdAttributes(Command):
+    """
+    List attributes
+
+    Usage:
+      attributes
+        
+    Displays a list of your current ability values.
+    """
+    key = "attributes"
+    aliases = ["att"]
+    lock = "cmd:all()"
+    help_category = "General"
+
+    def func(self):
+        "implements the actual functionality"
+
+        cog, coo, int, ref, sav, som, wil = self.caller.get_attributes() 
+        string = "Attributes: \n COG: %s, COO: %s, INT: %s, REF: %s, SAV: %s, SOM: %s, WIL: %s" % (cog, coo, int, ref, sav, som, wil)
+        self.caller.msg(string)
+
+class CmdSkills(Command):
+    """
+    List skills
+
+    Usage:
+      skills
+        
+    Displays a list of your current skill levels.
+    """
+    key = "skills"
+    aliases = ["skl"]
+    lock = "cmd:all()"
+    help_category = "General"
+
+    def func(self):
+        "implements the actual functionality"
+        
+        academics, animalhandling, art, beamweapons, blades, climbing, clubs, control, deception, demolitions, diguise, xenosmelee, xenosranged, flight, fray, freefall, freerunning, gunnery, hardware, impersonation, infiltration, infosec, interfacing, intimidation, investigation, kinesics, kineticweapons, linguistics, medicine, navigation, palming, perception, persuasion, pilot, programming, protocol, psiassault, psychosurgery, research, scrounging, seekerweapons, sense, sprayweapons, swimming, thrownweapons, unarmedcombat = self.caller.get_skills() 
+        string = "Skill Levels: \n Academics: %s, Animal Handling: %s, Art: %s, Beam Weapons: %s, Blades: %s, Climbing: %s, Clubs: %s, Control: %s, Deception: %s, Demolitions: %s, Diguise: %s, Xenos Melee Weapons: %s, Xenos Ranged Weapons: %s, Flight: %s, Fray: %s, Free Fall: %s, Freerunning: %s, Gunnery: %s, Hardware: %s, Impersonation: %s, Infiltration: %s, Infosec: %s, Interfacing: %s, Intimidation: %s, Investigation: %s, Kinesics: %s, Kinetic Weapons: %s, Linguistics: %s, Medicine: %s, Navigation: %s, Palming: %s, Perception: %s, Persuasion: %s, Pilot: %s, Programming: %s, Protocol: %s, Psi Assault: %s, Psychosurgery: %s, Research: %s, Scrounging: %s, Seeker Weapons: %s, Sense: %s, Spray Weapons: %s, Swimming: %s, Thrown Weapons: %s, Unarmed Combat: %s" % (academics, animalhandling, art, beamweapons, blades, climbing, clubs, control, deception, demolitions, diguise, xenosmelee, xenosranged, flight, fray, freefall, freerunning, gunnery, hardware, impersonation, infiltration, infosec, interfacing, intimidation, investigation, kinesics, kineticweapons, linguistics, medicine, navigation, palming, perception, persuasion, pilot, programming, protocol, psiassault, psychosurgery, research, scrounging, seekerweapons, sense, sprayweapons, swimming, thrownweapons, unarmedcombat)
+        self.caller.msg(string)
+
+#class CmdAbilities(Command):
+    #"""
+    #List abilities
+
+    #Usage:
+      #abilities
+        
+    #Displays a list of your current abilities.
+    #"""
+    #key = "abilities"
+    #aliases = ["abi"]
+    #lock = "cmd:all()"
+    #help_category = "General"
+
+    #def func(self):
+        #"implements the actual functionality"
+
+        ###will need to work out a system to have these added and
+        ###removed from the character sheet dynamically when 
+        ###skill level combination meets the requirement to unlock the ability
+        ###likely some kind of parser that will compare skill levels against 
+        ###flags assigned to the abilities (yay loops! </sarcasm>)
+        ###change the following to abilities once they are created
+        #cog, coo, int, ref, sav, som, wil = self.caller.get_abilities() 
+        #string = "COG: %s, COO: %s, INT: %s, REF: %s, SAV: %s, SOM: %s, WIL: %s" % (cog, coo, int, ref, sav, som, wil)
+        #self.caller.msg(string)
+
+from evennia import default_cmds
+class CmdEcho(default_cmds.MuxCommand):
+    """
+    Simple command example
+
+    Usage:
+        echo [text]
+
+    This command simply echoes text back to the caller.
+    """
+    key = "echo"
+
+    def func(self):
+        "This actually does things"
+        if not self.args:
+            self.caller.msg("You didn't enter anything!")
+        else:
+            self.caller.msg("You gave the string: '%s'" % self.args)
+
+#for tutorial purposes only, to be changed later to reflect actual
+#character creation process.
+class CmdSetPower(Command):
+	"""
+	set the power of a character
+	
+	Usage:
+	  +setpower <1-10>
+	
+	This sets the power of the current character. This can only be
+	used during character generation.
+	"""
+	
+	key = "+setpower"
+	help_category = "mush"
+	
+	def func(self):
+		"This performs the actual command"
+		errmsg = "You must supply a number between 1 and 10."
+		if not self.args:
+			self.caller.msg(errmsg)
+			return
+		try:
+			power = int(self.args)
+		except ValueError:
+			self.caller.msg(errmsg)
+			return
+		if not (1 <= power <= 10):
+			self.caller.msg(errmsg)
+			return
+		#at this point the argument is tested as valid. Let's see it.
+		self.caller.db.power = power
+		self.caller.msg("Your Power was set to %i." % power)
+
+class CmdAttack(Command):
+	"""
+	issues an attack
+	
+	Usage:
+	    +attack
+	
+	This will calculate a new combat score based on your Power.
+	Your combat score is visible to everyone in the same location.
+	"""
+	key = "+attack"
+	help_category = "mush"
+	
+	def func(self):
+		"Calculate the random score between 1-100*Power"
+		caller = self.caller
+		power = caller.db.power
+		if not power:
+			# this can happen if our caller is not of
+			# our custom Character typeclass
+			power = 1
+		combat_score = random.randint(1, 10 * power)
+		caller.db.combat_score = combat_score
+		
+		#announce
+		message = "%s +attack%s with a combat score of %s!"
+		caller.msg(message % ("You", "", combat_score))
+		caller.location.msg_contents(message % (caller.key, "s", combat_score), exclude=caller)
+   
+class CmdCreateNPC(Command):
+	"""
+	create a new npc
+	
+	Usage:
+		+createNPC <name>
+	
+	Creates a new, named NPC. The NPC will start with a Power of 1.
+	"""
+	key = "+createnpc"
+	aliases = ["+createNPC"]
+	locks = "call:not perm(nonpcs)"
+	help_category = "mush"
+    
+	def func(self):
+		"creates the object and names it"
+		caller = self.caller
+		if not self.args:
+			caller.msg("Usage: +createNPC <name>")
+			return
+		if not caller.location:
+			#may not create npc when OOC
+			caller.msg("You must have a location to create an npc.")
+			return
+		#make name always start with capital letter
+		name = self.args.strip().capitalize()
+		#create npc in caller's location
+		npc = create_object("characters.Character", key=name, location=caller.location, locks="edit:id(%i) and perm(Builders);call:false()" % caller.id)
+		#announce
+		message = "%s created the NPC '%s'."
+		caller.msg(message % ("You", name))
+		caller.location.msg_contents(message % (caller.key, name), exclude=caller)
+
+
+class CmdEditNPC(Command):
+	"""
+	edit an existing NPC
+	
+	Usage:
+		+editnpc <name>[/<attribute> [= value]]
+	
+	Examples:
+		+editnpc mynpc/power = 5
+		+editnpc mynpc/power	- displays power value
+		+editnpc mynpc			- shows all editable
+								  attributes and values
+	
+	This command edits an existing NPC. You must have
+	permission to edit the NPC to use this.
+	"""
+	key = "+editnpc"
+	aliases = ["+editNPC"]
+	locks = "cmd:not perm(nonpcs)"
+	help_category = "mush"
+	
+	def parse(selff):
+		"We need to do some parsing here"
+		args = self.args
+		propname, propval = None, None
+		if "=" in args:
+			args, propval = [part.strip() for part in args.rsplit("=", 1)]
+		if "/" in args:
+			args, propname = [part.strip() for part in args.rsplit("/", 1)]
+		# store, so we can access it below in func()
+		self.name = args
+		self.propname = propname
+		# a propval without a propname is meaningless
+		self.propval = propval if propnam else None
+		
+	def func(self):
+		"do the editing"
+		#obviously needs editing later
+		allowed_propnames = ("power", "attribute1", "attribute2")
+		
+		caller = self.caller
+		if not self.args or not self.name:
+			caller.msg("Usage: +editnpc name[/propname][=propval]")
+			return
+		npc = caller.search(self.name)
+		if not npc:
+			return
+		if not npc.access(caller, "edit"):
+			caller.msg("You cannot change this NPC.")
+			return
+		if not self.propname:
+			# this means we just list the values
+			output = "Properties of %s:" % npc.key
+			for propname in allowed_propnames:
+				propvalue = npc.attributes.get(propname, default="N/A")
+				output += "\n %s = %s" % (propname, propvalue)
+			caller.msg(output)
+		elif self.propname not in allowed_propnames:
+			caller.msg("You may only change %s." % ", ".join(allowed_propnames))
+		elif self.propval:
+			# assigning a new propvalue
+			# in this example, the properties are all integers...
+			intpropval + int(self.propval)
+			npc.attributes.add(self.propname, intpropval)
+			caller.msg("Set %s's property '%s' to %s" % (npc.key, self.propname, self.propval))
+		else:
+			#propname set, but not propval - show current value
+			caller.msg("%s has property %s = %s" % (npc.key, self.propname, npc.attributes.get(self.propname, default="N/A")))
+
+class CmdNPC(Command):
+    """
+    controls an NPC
+
+    Usage: 
+        +npc <name> = <command>
+
+    This causes the npc to perform a command as itself. It will do so
+    with its own permissions and accesses. 
+    """
+    key = "+npc"
+    locks = "call:not perm(nonpcs)"
+    help_category = "mush"
+
+    def parse(self):
+        "Simple split of the = sign"
+        name, cmdname = None, None
+        if "=" in self.args:
+            name, cmdname = [part.strip() 
+                             for part in self.args.rsplit("=", 1)]
+        self.name, self.cmdname = name, cmdname
+
+    def func(self):
+        "Run the command"
+        caller = self.caller
+        if not self.cmdname:
+            caller.msg("Usage: +npc <name> = <command>")
+            return
+        npc = caller.search(self.name)   
+        if not npc:
+            return
+        if not npc.access(caller, "edit"):
+            caller.msg("You may not order this NPC to do anything.")
+            return
+        # send the command order
+        npc.execute_cmd(self.cmdname)
+        caller.msg("You told %s to do '%s'." % (npc.key, self.cmdname))
+
+    
+pass
 
 # -------------------------------------------------------------
 #
@@ -183,3 +478,4 @@ class Command(BaseCommand):
 #                 self.character = self.caller.get_puppet(self.session)
 #             else:
 #                 self.character = None
+
